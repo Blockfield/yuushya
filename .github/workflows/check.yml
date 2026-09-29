@@ -22,7 +22,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
-          python-version: '3.12.14'
+          # Bootstrap only; toolchain.py pins the build interpreter and compressor.
+          python-version: '3.12.10'
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: temurin
