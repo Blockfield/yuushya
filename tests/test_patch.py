@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import subprocess
 import tempfile
 import unittest
 import zipfile
@@ -14,6 +15,19 @@ spec.loader.exec_module(recipe)
 
 
 class ChecksumChecks(unittest.TestCase):
+    def test_wrong_jdk_is_rejected_before_compilation(self):
+        version = subprocess.CompletedProcess(
+            ["java", "-version"], 0, b"", b'openjdk version "22.0.1"\n'
+        )
+        with (
+            patch.dict(recipe.os.environ, {"JAVA_HOME": ""}),
+            patch.object(recipe.shutil, "which", return_value="/native/java"),
+            patch.object(recipe.subprocess, "run", return_value=version) as run,
+        ):
+            with self.assertRaisesRegex(SystemExit, "JDK 21 required"):
+                recipe.java_tool(["java", "-jar", "candidate.jar"])
+            self.assertEqual(run.call_count, 1)
+
     def test_upstream_checksum_failure_preserves_output(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

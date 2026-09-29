@@ -5,6 +5,8 @@ import hashlib
 import io
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import urllib.request
@@ -13,6 +15,9 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
+from toolchain import child_env  # noqa: E402 — isolated Python omits the script directory.
+
 ASM_VERSION = "9.8"
 ASM_SHA256 = {
     "asm": "876eab6a83daecad5ca67eb9fcabb063c97b5aeb8cf1fca7a989ecde17522051",
@@ -92,13 +97,27 @@ def cached_bytes(path, url, algorithm, expected):
 
 
 def java_tool(command, **kwargs):
-    environment = {
-        key: value
-        for key, value in os.environ.items()
-        if key not in {"APPIMAGE", "__MISE_SHIM", "__MISE_DIFF"}
-    }
+    environment = child_env()
+    suffix = ".exe" if os.name == "nt" else ""
+    home = environment.get("JAVA_HOME")
+    candidate = Path(home) / "bin" / (command[0] + suffix) if home else None
+    executable = (
+        str(candidate)
+        if candidate and candidate.is_file()
+        else shutil.which(command[0], path=environment["PATH"])
+    )
+    if executable is None:
+        sys.exit("Install JDK 21 and set JAVA_HOME or put its bin directory on PATH")
+    version = subprocess.run(
+        [executable, "-version"], env=environment, capture_output=True, check=True, timeout=30
+    )
+    match = re.search(
+        rb'\b(?:java|javac|openjdk)(?: version)?\s+"?(\d+)', version.stdout + version.stderr
+    )
+    if match is None or match[1] != b"21":
+        sys.exit(f"JDK 21 required: {executable}")
     return subprocess.run(
-        ["mise", "exec", "--", *command],
+        [executable, *command[1:]],
         cwd=ROOT,
         env=environment,
         check=True,
@@ -187,7 +206,7 @@ def strip_empty_faces(text, name):
 def main():
     if (zlib.ZLIB_VERSION, zlib.ZLIB_RUNTIME_VERSION) != ("1.3.2", "1.3.2"):
         sys.exit(
-            f"Use mise exec -- python3 scripts/patch.py: expected zlib 1.3.2/1.3.2, "
+            f"Use just build: expected zlib 1.3.2/1.3.2, "
             f"got {zlib.ZLIB_VERSION}/{zlib.ZLIB_RUNTIME_VERSION}"
         )
     for spec in JARS:

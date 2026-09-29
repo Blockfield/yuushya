@@ -8,25 +8,25 @@ The modpack consumes release assets by URL and hash; JARs are not stored in Git.
 
 ## Build and checks
 
-Use the project tools from `mise.toml`: Python 3.12.14, JDK 21, Ruff 0.15.7,
-actionlint 1.7.12 and ShellCheck 0.11.0. No global installation is required.
+Needs native Python 3.12 or later, Git, Just 1.57.0 and JDK 21 (`JAVA_HOME` or
+`PATH`). The project selects Python 3.12.14 with standard zlib 1.3.2 and caches
+the checksum-pinned standalone interpreter when the host version differs.
+Ruff 0.15.7 and actionlint 1.7.12 are pinned in `scripts/toolchain.py`; fetched
+tools stay inside `.cache/quality/`.
 
 ```sh
-mise trust
-env -u APPIMAGE -u __MISE_SHIM -u __MISE_DIFF mise install
-env -u APPIMAGE -u __MISE_SHIM -u __MISE_DIFF mise run lint
-env -u APPIMAGE -u __MISE_SHIM -u __MISE_DIFF mise run format:check
-env -u APPIMAGE -u __MISE_SHIM -u __MISE_DIFF mise run test
-env -u APPIMAGE -u __MISE_SHIM -u __MISE_DIFF mise run build
-cd files/mods
-sha256sum -c ../../BUILD-SHA256SUMS
+just check
+just build
+just verify
 ```
 
-`mise run format` applies Ruff and Google Java Format 1.36.1 (AOSP style).
+`just format` applies Ruff and Google Java Format 1.36.1 (AOSP style).
 The same check commands run in GitHub Actions. Compiler checks use
 `javac --release 21 -Xlint:all -Werror`; each Java process is limited to 128 MB.
-The task definitions resolve the project Python executable directly so an
-inherited shell PATH cannot switch the ZIP compressor.
+Tasks use isolated UTF-8 Python and resolve child Python through that same
+executable. Child tools remove inherited Python/JVM wrapper options while
+retaining the project JDK. These commands work without shell-specific syntax;
+CI separately checks Linux and Windows, including the canonical build checksum.
 
 The first build downloads the exact upstream into `files/mods/` and verifies its
 SHA512 before use. Every cached artifact is checked again on every build. ASM

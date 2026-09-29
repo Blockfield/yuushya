@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import subprocess
 import sys
+from pathlib import Path
 
-from patch import ROOT, cached_bytes, java_tool
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from patch import ROOT, cached_bytes, java_tool  # noqa: E402 — explicit checkout-local import.
 
 VERSION = "1.36.1"
 SHA256 = "25b400f003089d23cc5320cdaf1a16cabee19b8aa3434d0ff021b3d9f42154b4"

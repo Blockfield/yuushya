@@ -1,18 +1,34 @@
-name: Recipe checks
+name: Code quality
 on:
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read
 jobs:
   check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v3
-      - run: mise run lint
-      - run: mise run format:check
-      - run: mise run test
-      - run: mise run build
-      - run: cd files/mods && sha256sum -c ../../BUILD-SHA256SUMS
+      - name: Enable Windows long paths
+        if: runner.os == 'Windows'
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.14'
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Prepare pinned project tools
+        run: python -I -X utf8 scripts/toolchain.py --ci
+      - run: just check
+      - run: just build
+      - run: just verify

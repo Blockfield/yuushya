@@ -56,7 +56,7 @@ for every entry; 30,540 compressed entry sizes differ because zlib-ng and zlib
 1.3.2 produce different ZIP streams. This is separate from the class change.
 Published artifact hashes and game distribution pins were not updated.
 
-`mise run test` covers:
+`just test` covers:
 
 - Pinned-upstream success and deterministic class output.
 - Missing, duplicate, unexpected field/call/lambda/method registrations and
