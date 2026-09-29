@@ -1,0 +1,21 @@
+[tools]
+python = "3.12.14"
+java = "temurin-21.0.12+101.0.LTS"
+ruff = "0.15.7"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
+
+[tasks.lint]
+run = ["ruff check .", "actionlint"]
+
+[tasks."format:check"]
+run = ["ruff format --check .", "'{{ tools.python.path }}/bin/python3' scripts/format-java.py --check"]
+
+[tasks.format]
+run = ["ruff format .", "'{{ tools.python.path }}/bin/python3' scripts/format-java.py"]
+
+[tasks.test]
+run = "'{{ tools.python.path }}/bin/python3' -m unittest discover -s tests -v"
+
+[tasks.build]
+run = "'{{ tools.python.path }}/bin/python3' scripts/patch.py"
