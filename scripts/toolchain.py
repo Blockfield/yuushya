@@ -16,17 +16,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / ".cache" / "quality"
 PYTHON_ASSETS = {
-    "darwin-arm64": [
-        "https://github.com/astral-sh/python-build-standalone/releases/download/20260924/cpython-3.12.14%2B20260924-aarch64-apple-darwin-install_only.tar.gz",
-        "9763f43db2481a6af36af82ec40302aab7a73632f880129d07a6e81aec846277",
-    ],
     "linux-arm64": [
         "https://github.com/astral-sh/python-build-standalone/releases/download/20260924/cpython-3.12.14%2B20260924-aarch64-unknown-linux-gnu-install_only.tar.gz",
         "c0574c9c9fec561eb192ad510e4e79aaad039929b3531b3bb873e2f630fb14a9",
-    ],
-    "darwin-amd64": [
-        "https://github.com/astral-sh/python-build-standalone/releases/download/20260924/cpython-3.12.14%2B20260924-x86_64-apple-darwin-install_only.tar.gz",
-        "0d6a4a299908123f00bc844df737603f047ff9eba14fda6cad83f3cf3cb3a2af",
     ],
     "linux-amd64": [
         "https://github.com/astral-sh/python-build-standalone/releases/download/20260924/cpython-3.12.14%2B20260924-x86_64-unknown-linux-gnu-install_only.tar.gz",
@@ -42,14 +34,6 @@ PYTHON_ASSETS = {
     ],
 }
 BINARY_ASSETS = {
-    "actionlint-darwin-amd64": [
-        "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz",
-        "5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644",
-    ],
-    "actionlint-darwin-arm64": [
-        "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz",
-        "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f",
-    ],
     "actionlint-linux-amd64": [
         "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz",
         "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8",
@@ -66,14 +50,6 @@ BINARY_ASSETS = {
         "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_arm64.zip",
         "cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41",
     ],
-    "shfmt-darwin-amd64": [
-        "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_darwin_amd64",
-        "d33eee0da0f92835b3562e9767a05cee7e4eaeef47daa03bfd09da17b4b590a6",
-    ],
-    "shfmt-darwin-arm64": [
-        "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_darwin_arm64",
-        "b7c872db63553ccffc7253aba3ed7d4885a27d83f1ba567b1138c6315a5847e5",
-    ],
     "shfmt-linux-amd64": [
         "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_amd64",
         "76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf",
@@ -85,14 +61,6 @@ BINARY_ASSETS = {
     "shfmt-windows-amd64": [
         "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_windows_amd64.exe",
         "13629ce28442ca80b6b5a819f7574ab39e1c28c6e26734ca816c9714e04851df",
-    ],
-    "shellcheck-darwin-arm64": [
-        "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.gz",
-        "339b930feb1ea764467013cc1f72d09cd6b869ebf1013296ba9055ab2ffbd26f",
-    ],
-    "shellcheck-darwin-amd64": [
-        "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz",
-        "c2c15e08df0e8fbc374c335b230a7ee958c313fa5714817a59aa59f1aa594f51",
     ],
     "shellcheck-linux-arm64": [
         "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.gz",
@@ -106,10 +74,6 @@ BINARY_ASSETS = {
         "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip",
         "8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e740e",
     ],
-    "just-darwin-arm64": [
-        "https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-aarch64-apple-darwin.tar.gz",
-        "0381db216c2f97ce31d838a1562c1064dfbfa73f5a8a81581338a2cd9217df47",
-    ],
     "just-windows-arm64": [
         "https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-aarch64-pc-windows-msvc.zip",
         "14ff33bbac8d2f07deda30cd3bafe7be083213cdb1c4dae7a55567d375cc17f1",
@@ -117,10 +81,6 @@ BINARY_ASSETS = {
     "just-linux-arm64": [
         "https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-aarch64-unknown-linux-musl.tar.gz",
         "f225044a81adea6e0b3a8b9370aaf374e6af76c8735ae263ac993df55fd137ec",
-    ],
-    "just-darwin-amd64": [
-        "https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-x86_64-apple-darwin.tar.gz",
-        "5e6ade3698095576274b2b32cc9e5d467185e8e40b04949004c04cc3d7e962dc",
     ],
     "just-windows-amd64": [
         "https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-x86_64-pc-windows-msvc.zip",
@@ -197,7 +157,7 @@ def host():
         "arm64": "arm64",
         "aarch64": "arm64",
     }.get(machine)
-    if system not in ("linux", "darwin", "windows") or arch is None:
+    if system not in ("linux", "windows") or arch is None:
         raise RuntimeError(f"Unsupported platform: {system}/{machine}")
     return system, arch
 
