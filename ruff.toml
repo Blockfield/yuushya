@@ -4,3 +4,7 @@ exclude = ["files", "rn", ".cache"]
 
 [lint]
 select = ["E4", "E7", "E9", "F", "I"]
+
+[format]
+indent-style = "space"
+line-ending = "lf"
