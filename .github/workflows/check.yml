@@ -24,6 +24,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "21.0.12"
+      - name: Cache pinned project tools
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            .cache/quality
+            .dev/jdk
+          key: quality-tools-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ hashFiles('scripts/toolchain.py', 'scripts/quality.py', 'dev/quality.py') }}
       - name: Prepare pinned project tools
         run: python -I -X utf8 scripts/toolchain.py --ci
       - run: just check
