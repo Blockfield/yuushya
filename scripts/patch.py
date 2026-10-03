@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the bf2 candidate: unchanged Yuushya resource repairs and a checked ASM join-notice patch."""
+"""Build the bf3 candidate: Yuushya resource repairs and checked ASM join-notice/door-shape patches."""
 
 import hashlib
 import io
@@ -31,9 +31,10 @@ JARS = [
         "upstream_name": "yuushya-1.21.0-fabric-2.3.0.jar",
         "url": "https://cdn.modrinth.com/data/lfVtagkm/versions/dVVX3bpL/yuushya-1.21.0-fabric-2.3.0.jar",
         "sha512": "d4336ad28055e2bc62b4fe110da1c085347ea7b40f77ede4009256417a67ff59ec13ecf8af81abf052a67d52a8ae60f4627d9732e4474f72abbde400c65779f3",
-        "out": "files/mods/yuushya-1.21.0-fabric-2.3.0-bf2.jar",
+        "out": "files/mods/yuushya-1.21.0-fabric-2.3.0-bf3.jar",
         "remove": ["data/yuushya/recipe/painter_gift_box.json"],
         "patch_class": "com/yuushya/Yuushya.class",
+        "door_class": "com/yuushya/block/YuushyaBlockFactory$3.class",
         "replace": [
             (
                 "assets/yuushya/models/extra_building_material/sign/sign_14.json",
@@ -214,10 +215,12 @@ def main():
         local = ROOT / "files" / "mods" / spec["upstream_name"]
         data = cached_bytes(local, spec["url"], "sha512", spec["sha512"])
         with zipfile.ZipFile(io.BytesIO(data)) as source:
-            entry = spec["patch_class"]
-            if source.namelist().count(entry) != 1:
-                sys.exit(f"{entry}: expected exactly one class entry")
-            patched = patch_class(source.read(entry), compile_transformer())
+            entries = (spec["patch_class"], spec["door_class"])
+            for entry in entries:
+                if source.namelist().count(entry) != 1:
+                    sys.exit(f"{entry}: expected exactly one class entry")
+            classpath = compile_transformer()
+            patched = {entry: patch_class(source.read(entry), classpath) for entry in entries}
             replacements = dict.fromkeys(spec["replace"], 0)
             replace_all = dict.fromkeys(spec["replace_all"], 0)
             emptied = dict.fromkeys(spec["fix_empty_faces"], 0)
@@ -231,7 +234,7 @@ def main():
                         if name in spec["remove"]:
                             removed.append(name)
                             continue
-                        payload = patched if name == entry else source.read(name)
+                        payload = patched[name] if name in patched else source.read(name)
                         for replace_entry, old, new in spec["replace"]:
                             if replace_entry == name:
                                 text, hits = apply_replacements(
@@ -269,7 +272,8 @@ def main():
             print(f"  ~ {prefix}* : {old} -> {new} (x{hits})")
         for name, faces in emptied.items():
             print(f"  ~ {name}: removed empty faces {faces}")
-        print(f"  ~ {entry}: PLAYER_JOIN registration removed (ASM)")
+        print(f"  ~ {spec['patch_class']}: PLAYER_JOIN registration removed (ASM)")
+        print(f"  ~ {spec['door_class']}: mapped door shapes and dynamic collision cache (ASM)")
         print(
             f"{out_path.relative_to(ROOT)} <- {spec['upstream_name']} (sha512 {sha512(out_path.read_bytes())})"
         )

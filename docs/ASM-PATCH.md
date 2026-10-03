@@ -1,11 +1,11 @@
-# Yuushya PLAYER_JOIN patch
+# Yuushya bytecode patches
 
 Issue: [Blockfield/yuushya#3](https://github.com/Blockfield/yuushya/issues/3).
 Pinned source: `yuushya-1.21.0-fabric-2.3.0.jar`, Modrinth version `dVVX3bpL`.
 Its SHA512 remains
 `d4336ad28055e2bc62b4fe110da1c085347ea7b40f77ede4009256417a67ff59ec13ecf8af81abf052a67d52a8ae60f4627d9732e4474f72abbde400c65779f3`.
 
-## Exact target
+## Join notice: exact target
 
 `javap -v -p` on the pinned class locates this sequence in
 `com/yuushya/Yuushya.init:()V` at original offsets 45, 48 and 53:
@@ -29,6 +29,85 @@ The `SERVER_STARTED` registration at offsets 32–40 remains. The patch keeps th
 notice helper, every other method, all resources and the original constant pool.
 ASM reserializes labels, line-number offsets and instruction lengths after the
 removal. It does not recompute frames using Minecraft classes.
+
+## Window door shapes: bf3 contract
+
+The second and only additional class target is
+`com/yuushya/block/YuushyaBlockFactory$3`, a subclass of
+`net/minecraft/class_2323` (`DoorBlock`). The pinned upstream declares one final
+`val$yuushyaBlock:Lcom/yuushya/registries/YuushyaRegistryData$Block;` field,
+one constructor and a tooltip method. It has no shape override.
+
+This factory creates twelve blocks: `{white,black,gray,cyan,red,oak}_windows_door`
+and the corresponding `_windows_door_slide` variants. Their existing
+`data/yuushya/collision/*.json` resources provide the facing, half, hinge and open
+variants. For example, north-facing, left-hinged, open
+`white_windows_door_slide` has a local model-unit box
+`[-14,0,10]..[2,16,14]`, or block coordinates
+`[-0.875,0,0.625]..[0.125,1,0.875]`. The upstream inherited vanilla shape instead
+swings inside the original block.
+
+The added public override has intermediary signature:
+
+```text
+method_9530:(Lnet/minecraft/class_2680;Lnet/minecraft/class_1922;
+  Lnet/minecraft/class_2338;Lnet/minecraft/class_3726;)Lnet/minecraft/class_265;
+```
+
+It reads
+`com/yuushya/block/YuushyaBlockFactory.getYuushyaVoxelShapes:()Ljava/util/Map;`
+with `BlockState.toString()` as the key. The existing
+`CollisionFileReader.readAllCollision()` loader expands each variant into this
+map. A mapped shape is returned directly. For a missing mapping, the override
+calls the same lazy loader as upstream `BlockWithClassType`:
+
+```text
+CollisionFileReader.readCollisionToVoxelShape:
+  (Lnet/minecraft/class_2680;Ljava/lang/String;)V
+```
+
+The string argument is the state's actual block registry ID, obtained through
+`class_7923.field_41175` (`BuiltInRegistries.BLOCK`),
+`class_2680.method_26204` (`BlockState.getBlock`),
+`class_7922.method_10221` (`Registry.getKey`) and the returned identifier's
+`toString()`. After loading, the override repeats the map lookup. Only a second
+miss invokes the original `DoorBlock.method_9530` with all four arguments.
+
+This lazy path is required on a dedicated server as well as on a client.
+`AddonLoader.getCollision()` fills the variant map from its `SERVER_DATA`
+resource manager in common initialization; the server-start callback calls it
+again and then calls `readAllCollision()`. Client startup also calls
+`readAllCollision()`. Upstream eager loading only runs while the global shape
+map is entirely empty. An unrelated block's early lazy lookup can make it
+nonempty before the server-start callback, leaving door states absent. The
+existing lazy loader repairs only the requested door state; the global eager
+guard and loader implementations remain unchanged. The override retains no
+private shape cache, so a later map load or replacement is observed.
+
+Minecraft initializes static `BlockState` collision caches before the collision
+datapack loader. Therefore the constructor also calls
+`net/minecraft/class_4970$class_2251.method_9624:()Lnet/minecraft/class_4970$class_2251;`
+(`Properties.dynamicShape`) immediately before the single
+`DoorBlock.<init>:(Lnet/minecraft/class_8177;Lnet/minecraft/class_4970$class_2251;)V`.
+This prevents permanently caching the vanilla fallback at registry startup.
+Inherited collision handling obtains the outline shape dynamically. No
+collision JSON, registry ID, state property, placement or opening method is
+changed, and the join-notice patch remains the bf2 implementation.
+
+The transformer rejects a different superclass or captured field layout,
+changed/missing/multiple constructors, an unexpected super-call descriptor or
+settings operand, pre-existing dynamic settings, an existing shape override and
+repeated application. ASM validates structure and data flow without loading
+Minecraft to recompute frames. Pinned-class fixtures verify deterministic output,
+constant-pool variation, unchanged non-target methods, map/fallback execution,
+lazy loading with a partially populated global map and the actual registry ID,
+late map load/removal and the dynamic flag reaching the base constructor. These
+JVM fixtures isolate the new constructor/shape; full Minecraft cache, rendering
+and door-mechanic acceptance requires the separate client/server game matrix.
+
+The output filename is `yuushya-1.21.0-fabric-2.3.0-bf3.jar`. Published bf1
+`SHA256SUMS` and the previous bf2 artifact are retained; bf3 must receive its own
+canonical build checksum and, if authorized, its own release asset.
 
 ## Local verification, 2026-09-30
 

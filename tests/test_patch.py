@@ -88,9 +88,11 @@ class BytecodeChecks(unittest.TestCase):
             root = Path(directory)
             with zipfile.ZipFile(io.BytesIO(upstream)) as jar:
                 original = jar.read(recipe.JARS[0]["patch_class"])
+                door = jar.read(recipe.JARS[0]["door_class"])
             old = bytes.fromhex("b20063ba006d0000b900600200")
             self.assertEqual(original.count(old), 1)
             (root / "original.class").write_bytes(original)
+            (root / "door.class").write_bytes(door)
             (root / "legacy.class").write_bytes(original.replace(old, bytes(13)))
             classpath = recipe.compile_transformer()
             recipe.java_tool(
@@ -121,6 +123,7 @@ class BytecodeChecks(unittest.TestCase):
                     str(root / "legacy.class"),
                     str(root / "variation.class"),
                     str(root / "variation-patched.class"),
+                    str(root / "door.class"),
                 ]
             )
             print(result.stdout.decode(), end="")
