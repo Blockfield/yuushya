@@ -1,6 +1,6 @@
 # Yuushya — патч для Fabric 1.21.1
 
-Patch for Yuushya 2.3.0 on Fabric 1.21.1. Repairs resource references and removes the join notice registration.
+Patch for Yuushya 2.3.0 on Fabric 1.21.1. Repairs resource references, removes the join notice registration, and makes window-door shapes follow the existing collision resources.
 
 The recipe was extracted from `netherg-io/blockfield-modpack` at `19cdb35`. Release assets are used by the Blockfield client and server.
 
@@ -38,7 +38,7 @@ the scripts. A checksum mismatch fails before the candidate JAR is replaced;
 delete a damaged cache file explicitly to download it again. These JARs are
 build tools and are not included in the output mod.
 
-The recipe produces **a local bf2 candidate**, not a release, and leaves the
+The recipe produces **a local bf3 candidate**, not a release, and leaves the
 published `SHA256SUMS` unchanged. `BUILD-SHA256SUMS` checks the candidate produced
 with Python 3.12.14 and zlib compile/runtime **1.3.2/1.3.2**. The recipe rejects a
 different compressor before downloading or writing anything. Earlier bf1 was
@@ -48,7 +48,7 @@ artifact and must not be replaced with a rebuild hash.
 
 ## Join notice patch
 
-Only `com/yuushya/Yuushya.class` is transformed. `scripts/PatchYuushya.java`
+The join patch transforms `com/yuushya/Yuushya.class`. `scripts/PatchYuushya.java`
 identifies the exact `init()V` registration structurally, including the event
 owner, descriptors, lambda bootstrap and `lambda$init$4` callback. It removes
 three instructions rather than matching constant-pool indices in raw bytes.
@@ -58,7 +58,7 @@ other methods remain unchanged. ASM checks the output's structure and data flow.
 
 The pinned-upstream regression checks also run JVM verification with
 `-Xverify:all`, compare all methods with the legacy patch, and vary the constant
-pool while adding an unrelated instruction. The exact bf2 candidate also passed
+pool while adding an unrelated instruction. The previous bf2 candidate also passed
 dedicated-server/client loading and join/resource checks on the coordinator's
 isolated stand on 2026-09-30. The protocol is in [docs/ASM-PATCH.md](docs/ASM-PATCH.md).
 
@@ -71,7 +71,31 @@ the transformer instead of extending it. Updating upstream requires reviewing
 the registration, replacing its checksum deliberately, rerunning negative and
 resource-parity checks, and producing a new candidate version.
 
-Yuushya is shared between client and server. Publishing bf2 requires a new
+## Window door shapes
+
+The bf3 candidate additionally transforms
+`com/yuushya/block/YuushyaBlockFactory$3.class`, the vanilla-door factory used by
+the six window doors and their six sliding variants. Upstream packages their
+state-specific collision JSON but this subclass inherits vanilla swinging-door
+shapes instead of consulting the existing Yuushya shape map.
+
+The added outline-shape method reads `getYuushyaVoxelShapes()` by the current
+state's string key. A missing mapping delegates to the original `DoorBlock`
+method. `dynamicShape()` is applied to settings immediately before the base
+constructor, so Minecraft does not permanently cache the fallback collision
+before the datapack collision loader runs. Inherited collision handling then
+uses the same shape as the outline. The upstream loader, JSON, tooltip, block
+IDs, door placement and opening methods are unchanged.
+
+The ASM transformer rejects changed class/constructor layouts, an existing
+shape override or dynamic settings, and repeated application. Regression
+fixtures execute map lookup, vanilla fallback and mappings added/removed after
+construction; they also verify that dynamic settings reach the base constructor
+and that other methods remain unchanged. Full client/server door acceptance is
+a separate game check; the earlier bf2 loading check does not cover bf3 shapes.
+The exact descriptors are documented in [docs/ASM-PATCH.md](docs/ASM-PATCH.md).
+
+Yuushya is shared between client and server. Publishing bf3 requires a new
 release asset/tag, release notes, verified loading on both sides, updated pins
 on both sides and a paired contract release with the server first. This recipe
 does not update live pins or publish anything.
