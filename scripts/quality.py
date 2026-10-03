@@ -13,12 +13,30 @@ from toolchain import canonical_python, child_env, tool  # noqa: E402
 COMMANDS = {
     "lint": [("ruff", "check", "."), ("actionlint",)],
     "format-check": [
+        (
+            "prettier",
+            "--check",
+            "--no-error-on-unmatched-pattern",
+            "*.md",
+            "docs/**/*.md",
+            "release-notes/**/*.md",
+            ".github/**/*.yml",
+        ),
         ("just", "--unstable", "--fmt", "--check"),
         ("ruff", "format", "--check", "--exclude", "scripts/toolchain.py", "."),
         ("ruff", "format", "--check", "--config", "line-length=88", "scripts/toolchain.py"),
         ("python", "scripts/format-java.py", "--check"),
     ],
     "format": [
+        (
+            "prettier",
+            "--write",
+            "--no-error-on-unmatched-pattern",
+            "*.md",
+            "docs/**/*.md",
+            "release-notes/**/*.md",
+            ".github/**/*.yml",
+        ),
         ("just", "--unstable", "--fmt"),
         ("ruff", "format", "--exclude", "scripts/toolchain.py", "."),
         ("ruff", "format", "--config", "line-length=88", "scripts/toolchain.py"),
