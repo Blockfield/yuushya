@@ -80,8 +80,12 @@ state-specific collision JSON but this subclass inherits vanilla swinging-door
 shapes instead of consulting the existing Yuushya shape map.
 
 The added outline-shape method reads `getYuushyaVoxelShapes()` by the current
-state's string key. A missing mapping delegates to the original `DoorBlock`
-method. `dynamicShape()` is applied to settings immediately before the base
+state's string key. A missing mapping first invokes the existing lazy collision
+loader with the state and registry block ID, then repeats the lookup and delegates
+to the original `DoorBlock` method if no mapping exists. This is the same path as
+upstream `BlockWithClassType`: `readAllCollision()` skips eager loading whenever
+any unrelated shape has already populated the global map. `dynamicShape()` is
+applied to settings immediately before the base
 constructor, so Minecraft does not permanently cache the fallback collision
 before the datapack collision loader runs. Inherited collision handling then
 uses the same shape as the outline. The upstream loader, JSON, tooltip, block
@@ -89,8 +93,9 @@ IDs, door placement and opening methods are unchanged.
 
 The ASM transformer rejects changed class/constructor layouts, an existing
 shape override or dynamic settings, and repeated application. Regression
-fixtures execute map lookup, vanilla fallback and mappings added/removed after
-construction; they also verify that dynamic settings reach the base constructor
+fixtures execute map lookup, vanilla fallback, lazy loading with a partially
+populated global map and mappings added/removed after construction; they also
+verify that dynamic settings reach the base constructor
 and that other methods remain unchanged. Full client/server door acceptance is
 a separate game check; the earlier bf2 loading check does not cover bf3 shapes.
 The exact descriptors are documented in [docs/ASM-PATCH.md](docs/ASM-PATCH.md).

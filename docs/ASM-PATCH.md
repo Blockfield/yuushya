@@ -58,8 +58,30 @@ It reads
 `com/yuushya/block/YuushyaBlockFactory.getYuushyaVoxelShapes:()Ljava/util/Map;`
 with `BlockState.toString()` as the key. The existing
 `CollisionFileReader.readAllCollision()` loader expands each variant into this
-map. A mapped shape is returned directly; a missing mapping invokes the
-original `DoorBlock.method_9530` with all four arguments. The method retains no
+map. A mapped shape is returned directly. For a missing mapping, the override
+calls the same lazy loader as upstream `BlockWithClassType`:
+
+```text
+CollisionFileReader.readCollisionToVoxelShape:
+  (Lnet/minecraft/class_2680;Ljava/lang/String;)V
+```
+
+The string argument is the state's actual block registry ID, obtained through
+`class_7923.field_41175` (`BuiltInRegistries.BLOCK`),
+`class_2680.method_26204` (`BlockState.getBlock`),
+`class_7922.method_10221` (`Registry.getKey`) and the returned identifier's
+`toString()`. After loading, the override repeats the map lookup. Only a second
+miss invokes the original `DoorBlock.method_9530` with all four arguments.
+
+This lazy path is required on a dedicated server as well as on a client.
+`AddonLoader.getCollision()` fills the variant map from its `SERVER_DATA`
+resource manager in common initialization; the server-start callback calls it
+again and then calls `readAllCollision()`. Client startup also calls
+`readAllCollision()`. Upstream eager loading only runs while the global shape
+map is entirely empty. An unrelated block's early lazy lookup can make it
+nonempty before the server-start callback, leaving door states absent. The
+existing lazy loader repairs only the requested door state; the global eager
+guard and loader implementations remain unchanged. The override retains no
 private shape cache, so a later map load or replacement is observed.
 
 Minecraft initializes static `BlockState` collision caches before the collision
@@ -78,6 +100,7 @@ settings operand, pre-existing dynamic settings, an existing shape override and
 repeated application. ASM validates structure and data flow without loading
 Minecraft to recompute frames. Pinned-class fixtures verify deterministic output,
 constant-pool variation, unchanged non-target methods, map/fallback execution,
+lazy loading with a partially populated global map and the actual registry ID,
 late map load/removal and the dynamic flag reaching the base constructor. These
 JVM fixtures isolate the new constructor/shape; full Minecraft cache, rendering
 and door-mechanic acceptance requires the separate client/server game matrix.

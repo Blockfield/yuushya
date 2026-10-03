@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FrameNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
@@ -30,6 +31,8 @@ public final class PatchYuushya {
     static final String SETTINGS = "net/minecraft/class_4970$class_2251";
     static final String BLOCK = "com/yuushya/registries/YuushyaRegistryData$Block";
     static final String SHAPE = "net/minecraft/class_265";
+    static final String READER = "com/yuushya/collision/CollisionFileReader";
+    static final String LAZY_DESCRIPTOR = "(Lnet/minecraft/class_2680;Ljava/lang/String;)V";
     static final String SHAPE_DESCRIPTOR =
             "(Lnet/minecraft/class_2680;Lnet/minecraft/class_1922;Lnet/minecraft/class_2338;"
                     + "Lnet/minecraft/class_3726;)L"
@@ -176,31 +179,49 @@ public final class PatchYuushya {
 
         MethodNode shape =
                 new MethodNode(Opcodes.ACC_PUBLIC, "method_9530", SHAPE_DESCRIPTOR, null, null);
+        addShapeLookup(shape.instructions);
+        shape.instructions.add(new InsnNode(Opcodes.DUP));
+        LabelNode mapped = new LabelNode();
+        shape.instructions.add(new JumpInsnNode(Opcodes.IFNONNULL, mapped));
+        shape.instructions.add(new InsnNode(Opcodes.POP));
+        shape.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
         shape.instructions.add(
-                new MethodInsnNode(
-                        Opcodes.INVOKESTATIC,
-                        FACTORY,
-                        "getYuushyaVoxelShapes",
-                        "()Ljava/util/Map;",
-                        false));
+                new FieldInsnNode(
+                        Opcodes.GETSTATIC,
+                        "net/minecraft/class_7923",
+                        "field_41175",
+                        "Lnet/minecraft/class_7922;"));
         shape.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
         shape.instructions.add(
                 new MethodInsnNode(
                         Opcodes.INVOKEVIRTUAL,
                         "net/minecraft/class_2680",
+                        "method_26204",
+                        "()Lnet/minecraft/class_2248;",
+                        false));
+        shape.instructions.add(
+                new MethodInsnNode(
+                        Opcodes.INVOKEINTERFACE,
+                        "net/minecraft/class_7922",
+                        "method_10221",
+                        "(Ljava/lang/Object;)Lnet/minecraft/class_2960;",
+                        true));
+        shape.instructions.add(
+                new MethodInsnNode(
+                        Opcodes.INVOKEVIRTUAL,
+                        "net/minecraft/class_2960",
                         "toString",
                         "()Ljava/lang/String;",
                         false));
         shape.instructions.add(
                 new MethodInsnNode(
-                        Opcodes.INVOKEINTERFACE,
-                        "java/util/Map",
-                        "get",
-                        "(Ljava/lang/Object;)Ljava/lang/Object;",
-                        true));
-        shape.instructions.add(new TypeInsnNode(Opcodes.CHECKCAST, SHAPE));
+                        Opcodes.INVOKESTATIC,
+                        READER,
+                        "readCollisionToVoxelShape",
+                        LAZY_DESCRIPTOR,
+                        false));
+        addShapeLookup(shape.instructions);
         shape.instructions.add(new InsnNode(Opcodes.DUP));
-        LabelNode mapped = new LabelNode();
         shape.instructions.add(new JumpInsnNode(Opcodes.IFNONNULL, mapped));
         shape.instructions.add(new InsnNode(Opcodes.POP));
         for (int argument = 0; argument <= 4; argument++)
@@ -218,6 +239,32 @@ public final class PatchYuushya {
         ClassWriter writer = new ClassWriter(reader, 0);
         node.accept(new CheckClassAdapter(writer, true));
         return writer.toByteArray();
+    }
+
+    private static void addShapeLookup(InsnList instructions) {
+        instructions.add(
+                new MethodInsnNode(
+                        Opcodes.INVOKESTATIC,
+                        FACTORY,
+                        "getYuushyaVoxelShapes",
+                        "()Ljava/util/Map;",
+                        false));
+        instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+        instructions.add(
+                new MethodInsnNode(
+                        Opcodes.INVOKEVIRTUAL,
+                        "net/minecraft/class_2680",
+                        "toString",
+                        "()Ljava/lang/String;",
+                        false));
+        instructions.add(
+                new MethodInsnNode(
+                        Opcodes.INVOKEINTERFACE,
+                        "java/util/Map",
+                        "get",
+                        "(Ljava/lang/Object;)Ljava/lang/Object;",
+                        true));
+        instructions.add(new TypeInsnNode(Opcodes.CHECKCAST, SHAPE));
     }
 
     public static void main(String[] args) throws IOException {

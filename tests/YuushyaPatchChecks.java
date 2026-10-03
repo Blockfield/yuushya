@@ -136,6 +136,7 @@ public final class YuushyaPatchChecks {
                     "net/minecraft/class_1922",
                     "net/minecraft/class_2338",
                     "net/minecraft/class_3726",
+                    "net/minecraft/class_2248",
                     PatchYuushya.SHAPE,
                     PatchYuushya.BLOCK
                 }) definitions.put(name.replace('/', '.'), stub(name).toByteArray());
@@ -168,7 +169,56 @@ public final class YuushyaPatchChecks {
         key.visitInsn(Opcodes.ARETURN);
         key.visitMaxs(1, 1);
         key.visitEnd();
+        MethodVisitor block =
+                state.visitMethod(
+                        Opcodes.ACC_PUBLIC,
+                        "method_26204",
+                        "()Lnet/minecraft/class_2248;",
+                        null,
+                        null);
+        block.visitCode();
+        block.visitInsn(Opcodes.ACONST_NULL);
+        block.visitInsn(Opcodes.ARETURN);
+        block.visitMaxs(1, 1);
+        block.visitEnd();
         definitions.put("net.minecraft.class_2680", state.toByteArray());
+
+        ClassWriter identifier = stub("net/minecraft/class_2960");
+        MethodVisitor id =
+                identifier.visitMethod(
+                        Opcodes.ACC_PUBLIC, "toString", "()Ljava/lang/String;", null, null);
+        id.visitCode();
+        id.visitLdcInsn("yuushya:fixture-door");
+        id.visitInsn(Opcodes.ARETURN);
+        id.visitMaxs(1, 1);
+        id.visitEnd();
+        definitions.put("net.minecraft.class_2960", identifier.toByteArray());
+        ClassWriter registry = new ClassWriter(0);
+        registry.visit(
+                Opcodes.V21,
+                Opcodes.ACC_PUBLIC | Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT,
+                "net/minecraft/class_7922",
+                null,
+                "java/lang/Object",
+                null);
+        registry.visitMethod(
+                        Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT,
+                        "method_10221",
+                        "(Ljava/lang/Object;)Lnet/minecraft/class_2960;",
+                        null,
+                        null)
+                .visitEnd();
+        definitions.put("net.minecraft.class_7922", registry.toByteArray());
+        ClassWriter registries = stub("net/minecraft/class_7923");
+        registries
+                .visitField(
+                        Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                        "field_41175",
+                        "Lnet/minecraft/class_7922;",
+                        null,
+                        null)
+                .visitEnd();
+        definitions.put("net.minecraft.class_7923", registries.toByteArray());
 
         ClassWriter factory = stub(PatchYuushya.FACTORY);
         factory.visitField(
@@ -191,6 +241,71 @@ public final class YuushyaPatchChecks {
         shapes.visitMaxs(1, 0);
         shapes.visitEnd();
         definitions.put(PatchYuushya.FACTORY.replace('/', '.'), factory.toByteArray());
+
+        ClassWriter reader = stub(PatchYuushya.READER);
+        reader.visitField(
+                        Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                        "pending",
+                        "Ljava/util/Map;",
+                        null,
+                        null)
+                .visitEnd();
+        reader.visitField(
+                        Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                        "lastId",
+                        "Ljava/lang/String;",
+                        null,
+                        null)
+                .visitEnd();
+        reader.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "calls", "I", null, null)
+                .visitEnd();
+        MethodVisitor lazy =
+                reader.visitMethod(
+                        Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC,
+                        "readCollisionToVoxelShape",
+                        PatchYuushya.LAZY_DESCRIPTOR,
+                        null,
+                        null);
+        lazy.visitCode();
+        lazy.visitVarInsn(Opcodes.ALOAD, 1);
+        lazy.visitFieldInsn(Opcodes.PUTSTATIC, PatchYuushya.READER, "lastId", "Ljava/lang/String;");
+        lazy.visitFieldInsn(Opcodes.GETSTATIC, PatchYuushya.READER, "calls", "I");
+        lazy.visitInsn(Opcodes.ICONST_1);
+        lazy.visitInsn(Opcodes.IADD);
+        lazy.visitFieldInsn(Opcodes.PUTSTATIC, PatchYuushya.READER, "calls", "I");
+        lazy.visitFieldInsn(Opcodes.GETSTATIC, PatchYuushya.FACTORY, "shapes", "Ljava/util/Map;");
+        lazy.visitVarInsn(Opcodes.ALOAD, 0);
+        lazy.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "net/minecraft/class_2680",
+                "toString",
+                "()Ljava/lang/String;",
+                false);
+        lazy.visitFieldInsn(Opcodes.GETSTATIC, PatchYuushya.READER, "pending", "Ljava/util/Map;");
+        lazy.visitVarInsn(Opcodes.ALOAD, 0);
+        lazy.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                "net/minecraft/class_2680",
+                "toString",
+                "()Ljava/lang/String;",
+                false);
+        lazy.visitMethodInsn(
+                Opcodes.INVOKEINTERFACE,
+                "java/util/Map",
+                "get",
+                "(Ljava/lang/Object;)Ljava/lang/Object;",
+                true);
+        lazy.visitMethodInsn(
+                Opcodes.INVOKEINTERFACE,
+                "java/util/Map",
+                "put",
+                "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
+                true);
+        lazy.visitInsn(Opcodes.POP);
+        lazy.visitInsn(Opcodes.RETURN);
+        lazy.visitMaxs(4, 2);
+        lazy.visitEnd();
+        definitions.put(PatchYuushya.READER.replace('/', '.'), reader.toByteArray());
 
         ClassWriter base = stub(PatchYuushya.DOOR);
         base.visitField(Opcodes.ACC_PUBLIC, "dynamicAtConstruction", "Z", null, null).visitEnd();
@@ -247,6 +362,20 @@ public final class YuushyaPatchChecks {
                     }
                 };
         Class<?> settingsClass = loader.loadClass(PatchYuushya.SETTINGS.replace('/', '.'));
+        Class<?> registryClass = loader.loadClass("net.minecraft.class_7922");
+        Object identifierValue =
+                loader.loadClass("net.minecraft.class_2960").getConstructor().newInstance();
+        Object registryValue =
+                java.lang.reflect.Proxy.newProxyInstance(
+                        loader,
+                        new Class<?>[] {registryClass},
+                        (proxy, method, arguments) -> identifierValue);
+        loader.loadClass("net.minecraft.class_7923")
+                .getField("field_41175")
+                .set(null, registryValue);
+        Class<?> readerClass = loader.loadClass(PatchYuushya.READER.replace('/', '.'));
+        Map<String, Object> pending = new HashMap<>();
+        readerClass.getField("pending").set(null, pending);
         Class<?> doorClass = loader.loadClass(PatchYuushya.DOOR_CLASS.replace('/', '.'));
         var doorConstructor =
                 doorClass.getDeclaredConstructor(
@@ -271,6 +400,7 @@ public final class YuushyaPatchChecks {
                 .getField("fallback")
                 .set(null, vanilla);
         Map<String, Object> shapeMap = new HashMap<>();
+        shapeMap.put("unrelated-state", vanilla);
         loader.loadClass(PatchYuushya.FACTORY.replace('/', '.'))
                 .getField("shapes")
                 .set(null, shapeMap);
@@ -286,9 +416,17 @@ public final class YuushyaPatchChecks {
         Object stateValue = stateClass.getConstructor().newInstance();
         if (shapeMethod.invoke(door, stateValue, null, null, null) != vanilla)
             throw new AssertionError("Missing door mapping did not preserve vanilla fallback");
-        shapeMap.put("fixture-state", mapped);
+        if (!"yuushya:fixture-door".equals(readerClass.getField("lastId").get(null)))
+            throw new AssertionError("Lazy collision lookup did not use the registry block ID");
+        pending.put("fixture-state", mapped);
         if (shapeMethod.invoke(door, stateValue, null, null, null) != mapped)
-            throw new AssertionError("Door ignored a collision mapping loaded after construction");
+            throw new AssertionError("Partial nonempty shape map prevented lazy collision loading");
+        if (readerClass.getField("calls").getInt(null) != 2)
+            throw new AssertionError("Missing shape did not call the existing lazy loader");
+        if (shapeMethod.invoke(door, stateValue, null, null, null) != mapped
+                || readerClass.getField("calls").getInt(null) != 2)
+            throw new AssertionError("Mapped shape unnecessarily repeated lazy collision loading");
+        pending.remove("fixture-state");
         shapeMap.remove("fixture-state");
         if (shapeMethod.invoke(door, stateValue, null, null, null) != vanilla)
             throw new AssertionError("Door retained a removed collision mapping");
