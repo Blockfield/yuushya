@@ -10,10 +10,10 @@ The modpack consumes release assets by URL and hash; JARs are not stored in Git.
 
 ## Build and checks
 
-Needs native Python 3.12 or later, Git, Just 1.57.0 and JDK 21 (`JAVA_HOME` or
+Needs native Python 3.12 or later, Node.js 22, Git, Just 1.57.0 and JDK 21 (`JAVA_HOME` or
 `PATH`). The project selects Python 3.12.14 with standard zlib 1.3.2 and caches
 the checksum-pinned standalone interpreter when the host version differs.
-Ruff 0.15.7 and actionlint 1.7.12 are pinned in `scripts/toolchain.py`; fetched
+Ruff 0.15.7, actionlint 1.7.12 and Prettier 3.8.3 are pinned in `scripts/toolchain.py`; fetched
 tools stay inside `.cache/quality/`.
 
 ```sh

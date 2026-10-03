@@ -36,10 +36,10 @@ Before edits, the recipe at source commit
 `80fb15fa68b85be5cca60608b761ed093b36fb08` reproduced the published bf1 exactly.
 Two compressor baselines were saved before replacing the raw byte patch:
 
-| Artifact | SHA256 |
-| --- | --- |
-| Published bf1 / old zlib-ng build | `0dd92b2484dd7559084ae2808e93908d5db246c386366721307a6b8bd4f1ad5b` |
-| Old recipe / canonical zlib 1.3.2 | `b87b4768510da4649d04711ca0a843b1cf906fececbd1281334356873a7f2adb` |
+| Artifact                                 | SHA256                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| Published bf1 / old zlib-ng build        | `0dd92b2484dd7559084ae2808e93908d5db246c386366721307a6b8bd4f1ad5b` |
+| Old recipe / canonical zlib 1.3.2        | `b87b4768510da4649d04711ca0a843b1cf906fececbd1281334356873a7f2adb` |
 | ASM bf2 candidate / canonical zlib 1.3.2 | `de7bfa541fc549edbd6926ee9b36cc27b41a7add33095ef34b380b9b6a1f4d7b` |
 
 The two full candidate builds have identical SHA256. Both candidate and
