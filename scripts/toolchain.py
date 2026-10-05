@@ -245,12 +245,7 @@ def tool(name):
     if name in ("prettier", "pnpm"):
         version = {"prettier": "3.8.3", "pnpm": "11.18.0"}[name]
         directory = CACHE / "npm"
-        binary = (
-            directory
-            / "node_modules"
-            / ".bin"
-            / (name + ".cmd" if os.name == "nt" else name)
-        )
+        binary = directory / "node_modules" / ".bin" / (name + ".cmd" if os.name == "nt" else name)
         if not binary.is_file():
             call(
                 "npm",
@@ -278,9 +273,7 @@ def tool(name):
             data = source.read(member)
     elif url.endswith(".tar.gz"):
         with tarfile.open(archive) as source:
-            member = next(
-                m for m in source.getmembers() if Path(m.name).name == filename
-            )
+            member = next(m for m in source.getmembers() if Path(m.name).name == filename)
             data = source.extractfile(member).read()
     else:
         data = archive.read_bytes()
@@ -295,10 +288,9 @@ def tool(name):
 if __name__ == "__main__":
     if sys.argv[1:] == ["--ci"]:
         tool("just")
+        tool("shellcheck")
         python = canonical_python()
-        with Path(os.environ["GITHUB_PATH"]).open(
-            "a", encoding="utf-8", newline="\n"
-        ) as output:
+        with Path(os.environ["GITHUB_PATH"]).open("a", encoding="utf-8", newline="\n") as output:
             output.write(str(CACHE / "bin") + "\n" + str(python.parent) + "\n")
     else:
         call(canonical_python(), "-I", "-X", "utf8", *sys.argv[1:])
