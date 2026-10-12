@@ -1,3 +1,4 @@
 self-hosted-runner:
   labels:
     - small
+    - blacksmith-2vcpu-ubuntu-2404
