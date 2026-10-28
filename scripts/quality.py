@@ -55,6 +55,23 @@ def run(command):
     subprocess.run(args, cwd=ROOT, env=child_env(), check=True)
 
 
+def eol():
+    output = subprocess.check_output(
+        ["git", "ls-files", "--eol"], cwd=ROOT, env=child_env(), text=True
+    )
+    bad = sorted(
+        line.split("\t", 1)[1]
+        for line in output.splitlines()
+        if line.startswith(("i/crlf", "i/mixed"))
+    )
+    if bad:
+        raise SystemExit(
+            "CRLF line endings in the Git index:\n"
+            + "\n".join(bad)
+            + "\nFix with: git add --renormalize ."
+        )
+
+
 def verify():
     from patch import JARS
 
@@ -96,6 +113,8 @@ def main():
         return
     stages = ("lint", "format-check", "test") if args.command == "check" else (args.command,)
     for stage in stages:
+        if stage in ("format", "format-check"):
+            eol()
         for command in COMMANDS[stage]:
             run(command)
 
