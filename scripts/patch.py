@@ -35,6 +35,7 @@ JARS = [
         "remove": ["data/yuushya/recipe/painter_gift_box.json"],
         "patch_class": "com/yuushya/Yuushya.class",
         "door_class": "com/yuushya/block/YuushyaBlockFactory$3.class",
+        "entity_class": "com/yuushya/registries/YuushyaRegistries.class",
         "replace": [
             (
                 "assets/yuushya/models/extra_building_material/sign/sign_14.json",
@@ -215,7 +216,7 @@ def main():
         local = ROOT / "files" / "mods" / spec["upstream_name"]
         data = cached_bytes(local, spec["url"], "sha512", spec["sha512"])
         with zipfile.ZipFile(io.BytesIO(data)) as source:
-            entries = (spec["patch_class"], spec["door_class"])
+            entries = (spec["patch_class"], spec["door_class"], spec["entity_class"])
             for entry in entries:
                 if source.namelist().count(entry) != 1:
                     sys.exit(f"{entry}: expected exactly one class entry")
@@ -274,6 +275,7 @@ def main():
             print(f"  ~ {name}: removed empty faces {faces}")
         print(f"  ~ {spec['patch_class']}: PLAYER_JOIN registration removed (ASM)")
         print(f"  ~ {spec['door_class']}: mapped door shapes and dynamic collision cache (ASM)")
+        print(f"  ~ {spec['entity_class']}: ride_entity build() without id (ASM)")
         print(
             f"{out_path.relative_to(ROOT)} <- {spec['upstream_name']} (sha512 {sha512(out_path.read_bytes())})"
         )

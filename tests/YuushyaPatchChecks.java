@@ -9,6 +9,7 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.CheckClassAdapter;
@@ -476,8 +477,54 @@ public final class YuushyaPatchChecks {
         checkDoorRuntime(patched);
     }
 
+    static void checkEntityDataFixers(byte[] original) throws Exception {
+        int before = 0;
+        ClassNode node = read(original);
+        if (!PatchYuushya.ENTITY_CLASS.equals(node.name))
+            throw new AssertionError("entity fixture is not YuushyaRegistries");
+        for (MethodNode method : node.methods)
+            for (AbstractInsnNode instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode call
+                        && PatchYuushya.ENTITY_BUILDER.equals(call.owner)
+                        && "method_5905".equals(call.name)
+                        && PatchYuushya.ENTITY_WITH_ID.equals(call.desc)) before++;
+        if (before != 1) throw new AssertionError("expected one ride_entity build(String)");
+        byte[] patched = PatchYuushya.patch(original);
+        if (!java.util.Arrays.equals(patched, PatchYuushya.patch(original)))
+            throw new AssertionError("nondeterministic entity transformer");
+        int withId = 0, withoutId = 0;
+        for (MethodNode method : read(patched).methods)
+            for (AbstractInsnNode instruction : method.instructions)
+                if (instruction instanceof MethodInsnNode call
+                        && PatchYuushya.ENTITY_BUILDER.equals(call.owner)) {
+                    if ("method_5905".equals(call.name)
+                            && PatchYuushya.ENTITY_WITH_ID.equals(call.desc)) withId++;
+                    if ("build".equals(call.name)
+                            && PatchYuushya.ENTITY_WITHOUT_ID.equals(call.desc)) withoutId++;
+                }
+        if (withId != 0 || withoutId != 1) throw new AssertionError("entity build() rewrite");
+        try {
+            PatchYuushya.patch(patched);
+            throw new AssertionError("patched entity changed");
+        } catch (IllegalStateException expected) {
+            if (!expected.getMessage().contains("Expected exactly one ride_entity"))
+                throw new AssertionError(expected);
+        }
+        ClassNode noId = read(original);
+        for (MethodNode method : noId.methods)
+            for (AbstractInsnNode instruction : method.instructions.toArray())
+                if (instruction instanceof LdcInsnNode ldc && "ride_entity".equals(ldc.cst))
+                    method.instructions.remove(instruction);
+        try {
+            PatchYuushya.patch(write(noId, false));
+            throw new AssertionError("entity build(String) without LDC id accepted");
+        } catch (IllegalStateException expected) {
+            if (!expected.getMessage().contains("без LDC id")) throw new AssertionError(expected);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
-        checkDoor(Files.readAllBytes(Path.of(args[4])));
+        checkEntityDataFixers(Files.readAllBytes(Path.of(args[5])));
         byte[] original = Files.readAllBytes(Path.of(args[0]));
         byte[] legacy = Files.readAllBytes(Path.of(args[1]));
         byte[] patched = PatchYuushya.patch(original);
@@ -560,6 +607,7 @@ public final class YuushyaPatchChecks {
                         + " class, repeat/absent/multiple/unexpected field/invoke/lambda/method"
                         + " rejection, constant-pool and unrelated-NOP variation; door map/fallback"
                         + " execution, dynamic settings before base construction, mapping reload,"
-                        + " non-target parity and class/constructor/repeat drift refusal");
+                        + " non-target parity and class/constructor/repeat drift refusal"
+                        + "; ride_entity build() without id, drift refusal");
     }
 }
