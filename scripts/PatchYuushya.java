@@ -12,6 +12,7 @@ import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -26,6 +27,10 @@ import java.util.List;
 public final class PatchYuushya {
     static final String CLASS = "com/yuushya/Yuushya";
     static final String DOOR_CLASS = "com/yuushya/block/YuushyaBlockFactory$3";
+    static final String ENTITY_CLASS = "com/yuushya/registries/YuushyaRegistries";
+    static final String ENTITY_BUILDER = "net/minecraft/class_1299$class_1300";
+    static final String ENTITY_WITH_ID = "(Ljava/lang/String;)Lnet/minecraft/class_1299;";
+    static final String ENTITY_WITHOUT_ID = "()Lnet/minecraft/class_1299;";
     static final String FACTORY = "com/yuushya/block/YuushyaBlockFactory";
     static final String DOOR = "net/minecraft/class_2323";
     static final String SETTINGS = "net/minecraft/class_4970$class_2251";
@@ -59,11 +64,19 @@ public final class PatchYuushya {
         return node;
     }
 
+    static AbstractInsnNode nextInstructionBack(AbstractInsnNode node) {
+        do {
+            node = node.getPrevious();
+        } while (node != null && node.getOpcode() < 0);
+        return node;
+    }
+
     static byte[] patch(byte[] input) {
         ClassReader reader = new ClassReader(input);
         ClassNode node = new ClassNode();
         reader.accept(node, 0);
         if (DOOR_CLASS.equals(node.name)) return patchDoor(reader, node);
+        if (ENTITY_CLASS.equals(node.name)) return fixEntityDataFixers(node);
         if (!CLASS.equals(node.name)) {
             throw new IllegalArgumentException("Expected " + CLASS + ", got " + node.name);
         }
@@ -125,6 +138,45 @@ public final class PatchYuushya {
         method.instructions.remove(second);
         method.instructions.remove(third);
         ClassWriter writer = new ClassWriter(reader, 0);
+        node.accept(new CheckClassAdapter(writer, true));
+        return writer.toByteArray();
+    }
+
+    /**
+     * build(String) -> build(): ванильный DataFixer-lookup в build(String) пишет ERROR "No data
+     * fixer registered" на каждый модовый id, а результат lookup всё равно выбрасывается. Пара `LDC
+     * ride_entity; INVOKEVIRTUAL build(String)` заменяется на `INVOKEVIRTUAL build()` без id -- при
+     * null Fabric EntityTypeBuilderMixin.allowNullId пропускает lookup, настоящий id типу выдаёт
+     * реестр. Условие возврата -- апстрим перейдёт на build() без id.
+     */
+    static byte[] fixEntityDataFixers(ClassNode node) {
+        int changed = 0;
+        for (MethodNode method : node.methods) {
+            for (AbstractInsnNode instruction : method.instructions.toArray()) {
+                if (!(instruction instanceof MethodInsnNode call)
+                        || call.getOpcode() != Opcodes.INVOKEVIRTUAL
+                        || !ENTITY_BUILDER.equals(call.owner)
+                        || !"method_5905".equals(call.name)
+                        || !ENTITY_WITH_ID.equals(call.desc)) continue;
+                AbstractInsnNode previous = nextInstructionBack(instruction);
+                if (!(previous instanceof LdcInsnNode ldc) || !(ldc.cst instanceof String))
+                    throw new IllegalStateException("build(String) сущности без LDC id перед ним");
+                method.instructions.remove(previous);
+                method.instructions.set(
+                        call,
+                        new MethodInsnNode(
+                                Opcodes.INVOKEVIRTUAL,
+                                ENTITY_BUILDER,
+                                "build",
+                                ENTITY_WITHOUT_ID,
+                                false));
+                changed++;
+            }
+        }
+        if (changed != 1)
+            throw new IllegalStateException(
+                    "Expected exactly one ride_entity build(String), got " + changed);
+        ClassWriter writer = new ClassWriter(0);
         node.accept(new CheckClassAdapter(writer, true));
         return writer.toByteArray();
     }

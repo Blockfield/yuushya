@@ -71,6 +71,15 @@ the transformer instead of extending it. Updating upstream requires reviewing
 the registration, replacing its checksum deliberately, rerunning negative and
 resource-parity checks, and producing a new candidate version.
 
+## Entity data fixer
+
+The candidate additionally transforms `com/yuushya/registries/YuushyaRegistries.class`:
+the single `EntityType.Builder.build(String)` call in the `ride_entity` supplier becomes
+the no-arg `build()`. The vanilla DataFixer lookup logs "No data fixer registered" for the
+modded id while its result is discarded; Fabric skips the lookup for a null id while the
+registry still assigns the real id. The fixture asserts one rewritten call, no remaining
+`build(String)`, deterministic output and rejection of a missing id or a repeated patch.
+
 ## Window door shapes
 
 The bf3 candidate additionally transforms
