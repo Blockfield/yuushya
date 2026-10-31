@@ -38,7 +38,7 @@ the scripts. A checksum mismatch fails before the candidate JAR is replaced;
 delete a damaged cache file explicitly to download it again. These JARs are
 build tools and are not included in the output mod.
 
-The recipe produces **a local bf3 candidate**, not a release, and leaves the
+The recipe produces **a local bf4 candidate**, not a release, and leaves the
 published `SHA256SUMS` unchanged. `BUILD-SHA256SUMS` checks the candidate produced
 with Python 3.12.14 and zlib compile/runtime **1.3.2/1.3.2**. The recipe rejects a
 different compressor before downloading or writing anything. Earlier bf1 was
@@ -82,7 +82,7 @@ registry still assigns the real id. The fixture asserts one rewritten call, no r
 
 ## Window door shapes
 
-The bf3 candidate additionally transforms
+The bf4 candidate additionally transforms
 `com/yuushya/block/YuushyaBlockFactory$3.class`, the vanilla-door factory used by
 the six window doors and their six sliding variants. Upstream packages their
 state-specific collision JSON but this subclass inherits vanilla swinging-door
@@ -109,7 +109,7 @@ and that other methods remain unchanged. Full client/server door acceptance is
 a separate game check; the earlier bf2 loading check does not cover bf3 shapes.
 The exact descriptors are documented in [docs/ASM-PATCH.md](docs/ASM-PATCH.md).
 
-Yuushya is shared between client and server. Publishing bf3 requires a new
+Yuushya is shared between client and server. Publishing bf4 requires a new
 release asset/tag, release notes, verified loading on both sides, updated pins
 on both sides and a paired contract release with the server first. This recipe
 does not update live pins or publish anything.

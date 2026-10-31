@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the bf3 candidate: Yuushya resource repairs and checked ASM join-notice/door-shape patches."""
+"""Build the bf4 candidate: Yuushya resource repairs and checked ASM join-notice/door-shape patches."""
 
 import hashlib
 import io
@@ -31,7 +31,7 @@ JARS = [
         "upstream_name": "yuushya-1.21.0-fabric-2.3.0.jar",
         "url": "https://cdn.modrinth.com/data/lfVtagkm/versions/dVVX3bpL/yuushya-1.21.0-fabric-2.3.0.jar",
         "sha512": "d4336ad28055e2bc62b4fe110da1c085347ea7b40f77ede4009256417a67ff59ec13ecf8af81abf052a67d52a8ae60f4627d9732e4474f72abbde400c65779f3",
-        "out": "files/mods/yuushya-1.21.0-fabric-2.3.0-bf3.jar",
+        "out": "files/mods/yuushya-1.21.0-fabric-2.3.0-bf4.jar",
         "remove": ["data/yuushya/recipe/painter_gift_box.json"],
         "patch_class": "com/yuushya/Yuushya.class",
         "door_class": "com/yuushya/block/YuushyaBlockFactory$3.class",
